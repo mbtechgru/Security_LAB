@@ -10,7 +10,7 @@ This Terraform project deploys an isolated pentesting lab that mirrors the Cloud
 - Intentionally over-permissive IAM role for cloud-esc practice
 
 ## Usage
-1. Fill `terraform.tfvars` (see `terraform.tfvars.example`).
+1. Fill `terraform.tfvars' This would include the password, Keys for SSH access across all instances and other information require to configure the LAB.
 2. `terraform init`
 3. `terraform apply`
 4. On success, note the outputs (Kali public IP, bucket name, etc.).
