@@ -1,0 +1,49 @@
+{
+  "name": "CloudAccount",
+  "type": "object",
+  "properties": {
+    "provider": {
+      "type": "string",
+      "enum": [
+        "aws"
+      ],
+      "default": "aws",
+      "description": "Cloud provider"
+    },
+    "alias": {
+      "type": "string",
+      "description": "Friendly name for this account"
+    },
+    "access_key_id": {
+      "type": "string",
+      "description": "AWS Access Key ID"
+    },
+    "secret_access_key": {
+      "type": "string",
+      "description": "AWS Secret Access Key"
+    },
+    "default_region": {
+      "type": "string",
+      "default": "us-east-1"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "connected",
+        "disconnected",
+        "error",
+        "pending"
+      ],
+      "default": "pending"
+    },
+    "account_id": {
+      "type": "string",
+      "description": "AWS Account ID"
+    }
+  },
+  "required": [
+    "alias",
+    "access_key_id",
+    "secret_access_key"
+  ]
+}

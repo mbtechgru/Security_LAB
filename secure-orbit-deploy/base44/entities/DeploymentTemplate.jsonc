@@ -1,0 +1,61 @@
+{
+  "name": "DeploymentTemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Template name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Short description of this template"
+    },
+    "region": {
+      "type": "string",
+      "default": "us-east-1"
+    },
+    "vpc_cidr": {
+      "type": "string",
+      "default": "10.20.0.0/16"
+    },
+    "attacker_subnet_cidr": {
+      "type": "string",
+      "default": "10.20.10.0/24"
+    },
+    "victim_subnet_cidr": {
+      "type": "string",
+      "default": "10.20.20.0/24"
+    },
+    "services_subnet_cidr": {
+      "type": "string",
+      "default": "10.20.30.0/24"
+    },
+    "allowed_admin_cidr": {
+      "type": "string",
+      "default": "0.0.0.0/0"
+    },
+    "domain_name": {
+      "type": "string",
+      "default": "lab.local"
+    },
+    "instance_type": {
+      "type": "string",
+      "default": "t2.micro"
+    },
+    "key_pair_name": {
+      "type": "string"
+    },
+    "kali_ami_id": {
+      "type": "string"
+    },
+    "metasploitable_ami_id": {
+      "type": "string"
+    },
+    "windows_ami_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "name": "Event",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "deployment",
+        "security",
+        "system",
+        "account",
+        "error"
+      ],
+      "description": "Event type"
+    },
+    "title": {
+      "type": "string",
+      "description": "Event title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Event details"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "info",
+        "warning",
+        "critical",
+        "success"
+      ],
+      "default": "info"
+    },
+    "deployment_id": {
+      "type": "string",
+      "description": "Associated deployment ID"
+    }
+  },
+  "required": [
+    "type",
+    "title"
+  ]
+}

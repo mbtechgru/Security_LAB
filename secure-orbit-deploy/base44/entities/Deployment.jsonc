@@ -1,0 +1,119 @@
+{
+  "name": "Deployment",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Deployment name/label"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "initializing",
+        "planning",
+        "applying",
+        "deployed",
+        "destroying",
+        "destroyed",
+        "failed"
+      ],
+      "default": "pending",
+      "description": "Current deployment status"
+    },
+    "region": {
+      "type": "string",
+      "default": "us-east-1",
+      "description": "AWS region"
+    },
+    "availability_zone": {
+      "type": "string",
+      "description": "AWS availability zone"
+    },
+    "vpc_cidr": {
+      "type": "string",
+      "default": "10.20.0.0/16"
+    },
+    "attacker_subnet_cidr": {
+      "type": "string",
+      "default": "10.20.10.0/24"
+    },
+    "victim_subnet_cidr": {
+      "type": "string",
+      "default": "10.20.20.0/24"
+    },
+    "services_subnet_cidr": {
+      "type": "string",
+      "default": "10.20.30.0/24"
+    },
+    "key_pair_name": {
+      "type": "string"
+    },
+    "allowed_admin_cidr": {
+      "type": "string",
+      "default": "0.0.0.0/0"
+    },
+    "domain_name": {
+      "type": "string",
+      "default": "lab.local"
+    },
+    "dsrm_password": {
+      "type": "string"
+    },
+    "instance_type": {
+      "type": "string",
+      "default": "t2.micro"
+    },
+    "kali_ami_id": {
+      "type": "string"
+    },
+    "metasploitable_ami_id": {
+      "type": "string"
+    },
+    "windows_ami_id": {
+      "type": "string"
+    },
+    "kali_public_ip": {
+      "type": "string"
+    },
+    "vuln_bucket_name": {
+      "type": "string"
+    },
+    "vpc_id": {
+      "type": "string"
+    },
+    "instances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "private_ip": {
+            "type": "string"
+          },
+          "public_ip": {
+            "type": "string"
+          },
+          "subnet": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "deploy_log": {
+      "type": "string",
+      "description": "Deployment output/log"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

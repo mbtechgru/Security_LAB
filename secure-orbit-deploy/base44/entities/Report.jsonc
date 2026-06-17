@@ -1,0 +1,62 @@
+{
+  "name": "Report",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Report title"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "security_audit",
+        "resource_inventory",
+        "deployment_summary",
+        "vulnerability_scan",
+        "compliance"
+      ],
+      "default": "deployment_summary"
+    },
+    "deployment_id": {
+      "type": "string",
+      "description": "Associated deployment"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "generating",
+        "completed",
+        "failed"
+      ],
+      "default": "generating"
+    },
+    "content": {
+      "type": "string",
+      "description": "Report content in markdown"
+    },
+    "findings_count": {
+      "type": "number",
+      "default": 0
+    },
+    "critical_count": {
+      "type": "number",
+      "default": 0
+    },
+    "high_count": {
+      "type": "number",
+      "default": 0
+    },
+    "medium_count": {
+      "type": "number",
+      "default": 0
+    },
+    "low_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "title",
+    "type"
+  ]
+}
