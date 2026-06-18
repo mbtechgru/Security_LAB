@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Eye, ShieldAlert } from 'lucide-react';
 import moment from 'moment';
 import { cn } from '@/lib/utils';
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileBarChart, Eye, Loader2, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
+import { FileBarChart, Eye, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import moment from 'moment';
 
 const typeLabels = {

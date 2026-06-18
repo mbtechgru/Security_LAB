@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
-import { X, Download, FileBarChart } from 'lucide-react';
+import { X, FileBarChart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function ReportViewer({ report, onClose }) {

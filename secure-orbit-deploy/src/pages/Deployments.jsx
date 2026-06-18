@@ -53,59 +53,36 @@ const statusConfig = {
   planning: { icon: Rocket, color: 'bg-violet-500/10 text-violet-500 border-violet-500/20' },
 };
 
-function generateDeployLog(form) {
-  return `>>> terraform init
-Initializing the backend...
-Initializing provider plugins...
-- Finding hashicorp/aws versions matching ">= 5.0"...
-- Installing hashicorp/aws v5.76.0...
-- Installed hashicorp/aws v5.76.0
+// Terraform Cloud run statuses: https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run#run-states
+const TERMINAL_RUN_STATUSES = new Set([
+  'applied', 'planned_and_finished', 'discarded', 'errored', 'canceled', 'force_canceled',
+]);
+const FAILED_RUN_STATUSES = new Set(['discarded', 'errored', 'canceled', 'force_canceled']);
+const APPLYING_RUN_STATUSES = new Set(['apply_queued', 'applying']);
 
-Terraform has been successfully initialized!
+function getMissingFields(form) {
+  const missing = [];
+  if (!form.name) missing.push('Deployment Name');
+  if (!form.key_pair_name) missing.push('Key Pair Name');
+  if (!form.kali_ami_id) missing.push('Kali AMI ID');
+  if (!form.metasploitable_ami_id) missing.push('Metasploitable AMI ID');
+  if (!form.windows_ami_id) missing.push('Windows AMI ID');
+  if (!form.dsrm_password) missing.push('DSRM Password');
+  return missing;
+}
 
->>> terraform plan
-data.aws_caller_identity.current: Reading...
-data.aws_ssm_parameter.al2023_ami: Reading...
-
-Plan: 18 to add, 0 to change, 0 to destroy.
-
->>> terraform apply -auto-approve
-aws_vpc.lab: Creating...
-aws_vpc.lab: Creation complete [id=vpc-0abc123def456]
-aws_internet_gateway.igw: Creating...
-aws_internet_gateway.igw: Creation complete
-aws_subnet.attacker: Creating... [${form.attacker_subnet_cidr}]
-aws_subnet.victim: Creating... [${form.victim_subnet_cidr}]
-aws_subnet.services: Creating... [${form.services_subnet_cidr}]
-aws_subnet.attacker: Creation complete
-aws_subnet.victim: Creation complete
-aws_subnet.services: Creation complete
-aws_security_group.attacker: Creating...
-aws_security_group.victim: Creating...
-aws_security_group.services: Creating...
-aws_security_group.attacker: Creation complete
-aws_security_group.victim: Creation complete
-aws_security_group.services: Creation complete
-aws_iam_role.lab_role: Creating...
-aws_iam_role.lab_role: Creation complete
-aws_s3_bucket.vuln: Creating...
-aws_s3_bucket.vuln: Creation complete
-aws_instance.kali: Creating... [${form.instance_type}]
-aws_instance.metasploitable: Creating... [${form.instance_type}]
-aws_instance.windows_dc: Creating... [${form.instance_type}]
-aws_instance.juice_shop: Creating... [${form.instance_type}]
-aws_instance.kali: Still creating... [10s elapsed]
-aws_instance.kali: Creation complete [id=i-0abc123]
-aws_instance.metasploitable: Creation complete [id=i-0def456]
-aws_instance.windows_dc: Creation complete [id=i-0ghi789]
-aws_instance.juice_shop: Creation complete [id=i-0jkl012]
-
-Apply complete! Resources: 18 added, 0 changed, 0 destroyed.
-
-Outputs:
-kali_public_ip = "54.210.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}"
-vuln_bucket_name = "pentest-lab-vuln-${form.region}"
-vpc_id = "vpc-0abc123def456"`;
+// Polls the real Terraform Cloud run via the getRunStatus backend function
+// until it reaches a terminal state, streaming log text to onUpdate as it goes.
+async function pollRunStatus(runId, onUpdate, { intervalMs = 3000 } = {}) {
+  for (;;) {
+    const { data } = await base44.functions.invoke('getRunStatus', { runId });
+    const log = [data.planLog, data.applyLog].filter(Boolean).join('\n');
+    onUpdate({ status: data.status, log });
+    if (TERMINAL_RUN_STATUSES.has(data.status)) {
+      return { status: data.status, failed: FAILED_RUN_STATUSES.has(data.status) };
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
 }
 
 export default function Deployments() {
@@ -156,76 +133,108 @@ export default function Deployments() {
     },
     onSuccess: async (deployment) => {
       setIsDeploying(true);
-      const log = generateDeployLog(form);
-      const lines = log.split('\n');
-      let current = '';
-      
-      for (let i = 0; i < lines.length; i++) {
-        current += lines[i] + '\n';
-        setDeployLog(current);
-        await new Promise(r => setTimeout(r, 80));
+      setDeployLog('');
+      let latestLog = '';
+
+      try {
+        const { data: created } = await base44.functions.invoke('createWorkspace', form);
+        await base44.entities.Deployment.update(deployment.id, {
+          tfc_workspace_id: created.workspaceId,
+          tfc_run_id: created.runId,
+          status: 'planning',
+        });
+
+        const { failed } = await pollRunStatus(created.runId, ({ status, log }) => {
+          latestLog = log;
+          setDeployLog(log);
+          base44.entities.Deployment.update(deployment.id, {
+            status: APPLYING_RUN_STATUSES.has(status) ? 'applying' : 'planning',
+          });
+        });
+
+        if (failed) {
+          await base44.entities.Deployment.update(deployment.id, { status: 'failed', deploy_log: latestLog });
+          await base44.entities.Event.create({
+            type: 'deployment',
+            title: `Deployment "${form.name}" failed`,
+            severity: 'critical',
+            deployment_id: deployment.id,
+          });
+          toast.error('Deployment failed - check the log for details');
+        } else {
+          const { data: outputs } = await base44.functions.invoke('getOutputs', { workspaceId: created.workspaceId });
+          await base44.entities.Deployment.update(deployment.id, {
+            status: 'deployed',
+            deploy_log: latestLog,
+            kali_public_ip: outputs.kali_public_ip,
+            vpc_id: outputs.vpc_id,
+            vuln_bucket_name: outputs.vuln_bucket_name,
+            instances: [
+              { name: 'Kali Linux', type: form.instance_type, status: 'running', subnet: 'attacker', public_ip: outputs.kali_public_ip },
+              { name: 'Metasploitable 2', type: form.instance_type, status: 'running', subnet: 'victim' },
+              { name: 'Windows DC', type: form.instance_type, status: 'running', subnet: 'victim' },
+              { name: 'Juice Shop', type: form.instance_type, status: 'running', subnet: 'services' },
+            ],
+          });
+          await base44.entities.Event.create({
+            type: 'deployment',
+            title: `Deployment "${form.name}" completed`,
+            description: `Kali IP: ${outputs.kali_public_ip}`,
+            severity: 'success',
+            deployment_id: deployment.id,
+          });
+          toast.success('Lab deployed successfully!');
+        }
+      } catch (err) {
+        await base44.entities.Deployment.update(deployment.id, { status: 'failed', deploy_log: latestLog });
+        toast.error(err.message || 'Deployment failed');
+      } finally {
+        queryClient.invalidateQueries({ queryKey: ['deployments'] });
+        queryClient.invalidateQueries({ queryKey: ['events'] });
+        setIsDeploying(false);
       }
-
-      const kaliIp = `54.210.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
-      await base44.entities.Deployment.update(deployment.id, {
-        status: 'deployed',
-        kali_public_ip: kaliIp,
-        vpc_id: 'vpc-0abc123def456',
-        vuln_bucket_name: `pentest-lab-vuln-${form.region}`,
-        deploy_log: log,
-        instances: [
-          { name: 'Kali Linux', type: form.instance_type, status: 'running', subnet: 'attacker', public_ip: kaliIp },
-          { name: 'Metasploitable 2', type: form.instance_type, status: 'running', subnet: 'victim', private_ip: '10.20.20.10' },
-          { name: 'Windows DC', type: form.instance_type, status: 'running', subnet: 'victim', private_ip: '10.20.20.20' },
-          { name: 'Juice Shop', type: form.instance_type, status: 'running', subnet: 'services', private_ip: '10.20.30.10' },
-        ],
-      });
-
-      await base44.entities.Event.create({
-        type: 'deployment',
-        title: `Deployment "${form.name}" completed`,
-        description: `18 resources created. Kali IP: ${kaliIp}`,
-        severity: 'success',
-        deployment_id: deployment.id,
-      });
-
-      queryClient.invalidateQueries({ queryKey: ['deployments'] });
-      queryClient.invalidateQueries({ queryKey: ['events'] });
-      setIsDeploying(false);
-      toast.success('Lab deployed successfully!');
     },
   });
 
+  const destroyOne = async (id) => {
+    const dep = deployments.find(d => d.id === id);
+    if (!dep?.tfc_workspace_id) {
+      throw new Error(`Deployment "${dep?.name}" has no Terraform Cloud workspace on record`);
+    }
+    await base44.entities.Deployment.update(id, { status: 'destroying' });
+    const { data } = await base44.functions.invoke('destroyWorkspace', { workspaceId: dep.tfc_workspace_id });
+    const { failed } = await pollRunStatus(data.runId, () => {});
+    await base44.entities.Deployment.update(id, { status: failed ? 'failed' : 'destroyed', tfc_run_id: data.runId });
+    await base44.entities.Event.create({
+      type: 'deployment',
+      title: failed ? `Deployment "${dep.name}" destroy failed` : 'Deployment destroyed',
+      severity: failed ? 'critical' : 'warning',
+      deployment_id: id,
+    });
+    return { failed };
+  };
+
   const destroyDeployment = useMutation({
-    mutationFn: async (id) => {
-      await base44.entities.Deployment.update(id, { status: 'destroyed' });
-      await base44.entities.Event.create({
-        type: 'deployment',
-        title: 'Deployment destroyed',
-        severity: 'warning',
-        deployment_id: id,
-      });
-    },
-    onSuccess: () => {
+    mutationFn: destroyOne,
+    onSuccess: ({ failed }) => {
       queryClient.invalidateQueries({ queryKey: ['deployments'] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
-      toast.success('Lab destroyed');
+      if (failed) toast.error('Lab destroy failed - check Terraform Cloud for details');
+      else toast.success('Lab destroyed');
     },
   });
 
   const destroyBulk = useMutation({
     mutationFn: async (ids) => {
-      await Promise.all(ids.map(id =>
-        base44.entities.Deployment.update(id, { status: 'destroyed' }).then(() =>
-          base44.entities.Event.create({ type: 'deployment', title: 'Deployment destroyed', severity: 'warning', deployment_id: id })
-        )
-      ));
+      const results = await Promise.all(ids.map(destroyOne));
+      return results.some(r => r.failed);
     },
-    onSuccess: () => {
+    onSuccess: (anyFailed) => {
       queryClient.invalidateQueries({ queryKey: ['deployments'] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
       setSelected(new Set());
-      toast.success('Selected labs destroyed');
+      if (anyFailed) toast.error('Some labs failed to destroy - check Terraform Cloud for details');
+      else toast.success('Selected labs destroyed');
     },
   });
 
@@ -250,14 +259,7 @@ export default function Deployments() {
   };
 
   const handleDeploy = () => {
-    const missing = [];
-    if (!form.name) missing.push('Deployment Name');
-    if (!form.key_pair_name) missing.push('Key Pair Name');
-    if (!form.kali_ami_id) missing.push('Kali AMI ID');
-    if (!form.metasploitable_ami_id) missing.push('Metasploitable AMI ID');
-    if (!form.windows_ami_id) missing.push('Windows AMI ID');
-    if (!form.dsrm_password) missing.push('DSRM Password');
-    
+    const missing = getMissingFields(form);
     if (missing.length > 0) {
       toast.error('Missing required fields: ' + missing.join(', '));
       return;
@@ -267,128 +269,24 @@ export default function Deployments() {
   };
 
   const handlePlan = async () => {
-    const missing = [];
-    if (!form.name) missing.push('Deployment Name');
-    if (!form.key_pair_name) missing.push('Key Pair Name');
-    if (!form.kali_ami_id) missing.push('Kali AMI ID');
-    if (!form.metasploitable_ami_id) missing.push('Metasploitable AMI ID');
-    if (!form.windows_ami_id) missing.push('Windows AMI ID');
-    if (!form.dsrm_password) missing.push('DSRM Password');
-    
+    const missing = getMissingFields(form);
     if (missing.length > 0) {
       toast.error('Missing required fields: ' + missing.join(', '));
       return;
     }
     setIsPlanning(true);
     setPlanOutput('');
-    
-    const planLines = [
-      '>>> terraform init',
-      'Initializing the backend...',
-      'Initializing provider plugins...',
-      '- Finding hashicorp/aws versions matching ">= 5.0"...',
-      '- Installing hashicorp/aws v5.76.0...',
-      '- Installed hashicorp/aws v5.76.0',
-      '',
-      'Terraform has been successfully initialized!',
-      '',
-      '>>> terraform plan',
-      'data.aws_caller_identity.current: Reading...',
-      'data.aws_ssm_parameter.al2023_ami: Reading...',
-      '',
-      'Terraform will perform the following actions:',
-      '',
-      '  # aws_vpc.lab will be created',
-      '  + resource "aws_vpc" "lab" {',
-      '    + cidr_block           = "' + form.vpc_cidr + '"',
-      '    + enable_dns_hostnames = true',
-      '    + enable_dns_support   = true',
-      '    + id                   = (known after apply)',
-      '    + tags                 = {',
-      '        + "Name" = "' + form.name + '-vpc"',
-      '    }',
-      '  }',
-      '',
-      '  # aws_internet_gateway.igw will be created',
-      '  + resource "aws_internet_gateway" "igw" {',
-      '    + id       = (known after apply)',
-      '    + vpc_id   = (known after apply)',
-      '  }',
-      '',
-      '  # aws_subnet.attacker will be created',
-      '  + resource "aws_subnet" "attacker" {',
-      '    + cidr_block = "' + form.attacker_subnet_cidr + '"',
-      '    + vpc_id     = (known after apply)',
-      '  }',
-      '',
-      '  # aws_subnet.victim will be created',
-      '  + resource "aws_subnet" "victim" {',
-      '    + cidr_block = "' + form.victim_subnet_cidr + '"',
-      '    + vpc_id     = (known after apply)',
-      '  }',
-      '',
-      '  # aws_subnet.services will be created',
-      '  + resource "aws_subnet" "services" {',
-      '    + cidr_block = "' + form.services_subnet_cidr + '"',
-      '    + vpc_id     = (known after apply)',
-      '  }',
-      '',
-      '  # aws_security_group.attacker will be created',
-      '  + resource "aws_security_group" "attacker" { ... }',
-      '',
-      '  # aws_security_group.victim will be created',
-      '  + resource "aws_security_group" "victim" { ... }',
-      '',
-      '  # aws_security_group.services will be created',
-      '  + resource "aws_security_group" "services" { ... }',
-      '',
-      '  # aws_instance.kali will be created',
-      '  + resource "aws_instance" "kali" {',
-      '    + instance_type = "' + form.instance_type + '"',
-      '    + ami           = "' + form.kali_ami_id + '"',
-      '  }',
-      '',
-      '  # aws_instance.metasploitable will be created',
-      '  + resource "aws_instance" "metasploitable" {',
-      '    + instance_type = "' + form.instance_type + '"',
-      '    + ami           = "' + form.metasploitable_ami_id + '"',
-      '  }',
-      '',
-      '  # aws_instance.windows_dc will be created',
-      '  + resource "aws_instance" "windows_dc" {',
-      '    + instance_type = "' + form.instance_type + '"',
-      '    + ami           = "' + form.windows_ami_id + '"',
-      '  }',
-      '',
-      '  # aws_instance.juice_shop will be created',
-      '  + resource "aws_instance" "juice_shop" {',
-      '    + instance_type = "' + form.instance_type + '"',
-      '  }',
-      '',
-      '  # aws_iam_role.lab_role will be created',
-      '  + resource "aws_iam_role" "lab_role" { ... }',
-      '',
-      '  # aws_s3_bucket.vuln will be created',
-      '  + resource "aws_s3_bucket" "vuln" {',
-      '    + bucket = "pentest-lab-vuln-' + form.region + '"',
-      '  }',
-      '',
-      'Plan: 18 to add, 0 to change, 0 to destroy.',
-      '',
-      '────────────────────────────────────────────────────────────',
-      'Saved the plan to: tfplan',
-      '',
-      'To perform exactly these actions, run the following command:',
-      '    terraform apply "tfplan"',
-    ];
 
-    for (let i = 0; i < planLines.length; i++) {
-      setPlanOutput(prev => prev + planLines[i] + '\n');
-      await new Promise(r => setTimeout(r, 30));
+    try {
+      const { data } = await base44.functions.invoke('planOnly', form);
+      const { failed } = await pollRunStatus(data.runId, ({ log }) => setPlanOutput(log));
+      if (failed) toast.error('Terraform plan failed - check the output for details');
+      else toast.success('Terraform plan completed');
+    } catch (err) {
+      toast.error(err.message || 'Terraform plan failed');
+    } finally {
+      setIsPlanning(false);
     }
-    
-    setIsPlanning(false);
-    toast.success('Terraform plan completed - 18 resources to add');
   };
 
   return (
@@ -510,7 +408,7 @@ export default function Deployments() {
                         Destroy {selected.size} lab{selected.size > 1 ? 's' : ''}?
                       </AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will simulate <span className="font-mono font-semibold">terraform destroy</span> on all {selected.size} selected environments. This action cannot be undone.
+                        This will run <span className="font-mono font-semibold">terraform destroy</span> on all {selected.size} selected environments via Terraform Cloud. This action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -630,7 +528,7 @@ export default function Deployments() {
                             Destroy "{dep.name}"?
                           </AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will simulate <span className="font-mono font-semibold">terraform destroy</span> and mark all 18 AWS resources as destroyed. This action cannot be undone.
+                            This will run <span className="font-mono font-semibold">terraform destroy</span> via Terraform Cloud and tear down this lab's AWS resources. This action cannot be undone.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

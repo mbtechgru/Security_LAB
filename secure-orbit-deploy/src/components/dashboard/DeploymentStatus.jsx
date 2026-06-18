@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, AlertTriangle, Clock, XCircle, Loader2, Rocket } from 'lucide-react';
+import { CheckCircle2, Clock, XCircle, Loader2, Rocket } from 'lucide-react';
 
 const statusConfig = {
   deployed: { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500', label: 'Deployed' },

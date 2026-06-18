@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>SecLab Orchestrator — Architecture &amp; Demo Preview</title>
+<style>
+  :root {
+    --bg: #0a0e17;
+    --card: #11182a;
+    --border: #1f2a40;
+    --text: #e2e8f0;
+    --muted: #8896ab;
+    --accent: #3b82f6;
+    --green: #22c55e;
+    --violet: #8b5cf6;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 48px 24px 96px;
+  }
+  main { max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 28px; margin-bottom: 4px; }
+  .subtitle { color: var(--muted); margin-bottom: 40px; }
+  h2 { font-size: 18px; margin: 48px 0 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  p { line-height: 1.6; color: #cbd5e1; }
+  code { background: #1a2336; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+
+  .flow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 24px 0;
+  }
+  .flow-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    flex: 1;
+    min-width: 180px;
+  }
+  .flow-box h3 { margin: 0 0 6px; font-size: 14px; }
+  .flow-box p { margin: 0; font-size: 12.5px; color: var(--muted); }
+  .flow-arrow { color: var(--muted); font-size: 20px; padding: 0 4px; }
+  .badge { display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 999px; margin-bottom: 8px; }
+  .badge.browser { background: rgba(59,130,246,0.15); color: var(--accent); }
+  .badge.server { background: rgba(139,92,246,0.15); color: var(--violet); }
+  .badge.cloud { background: rgba(34,197,94,0.15); color: var(--green); }
+
+  .steps { padding-left: 20px; color: #cbd5e1; }
+  .steps li { margin-bottom: 10px; line-height: 1.5; }
+
+  .shot { margin: 24px 0; }
+  .shot img { width: 100%; border-radius: 10px; border: 1px solid var(--border); display: block; }
+  .shot figcaption { color: var(--muted); font-size: 13px; margin-top: 8px; }
+
+  .note {
+    background: rgba(139,92,246,0.08);
+    border: 1px solid rgba(139,92,246,0.25);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 13.5px;
+    color: #d8d2fb;
+    margin: 16px 0;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>SecLab Orchestrator — Architecture &amp; Demo Preview</h1>
+  <p class="subtitle">How the Terraform pentest lab, the secure-orbit-deploy dashboard, and Terraform Cloud fit together — illustrated with real screenshots from the rewired Deployments page.</p>
+
+  <h2>Pipeline</h2>
+  <div class="flow">
+    <div class="flow-box">
+      <span class="badge browser">browser</span>
+      <h3>React dashboard</h3>
+      <p>secure-orbit-deploy — Deployments page. Form values mirror variables.tf 1:1. Calls <code>base44.functions.invoke(...)</code>.</p>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box">
+      <span class="badge server">server</span>
+      <h3>Base44 backend functions</h3>
+      <p><code>createWorkspace</code> / <code>planOnly</code> / <code>getRunStatus</code> / <code>getOutputs</code> / <code>destroyWorkspace</code>. Hold the TFC token + AWS creds — never sent to the browser.</p>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box">
+      <span class="badge cloud">cloud</span>
+      <h3>Terraform Cloud</h3>
+      <p>One workspace per deployment, configured with this repo's <code>main.tf</code>/<code>variables.tf</code>/<code>outputs.tf</code>. Runs real plan/apply/destroy.</p>
+    </div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-box">
+      <span class="badge cloud">cloud</span>
+      <h3>AWS lab</h3>
+      <p>VPC, Kali, Metasploitable, Windows DC, Juice Shop, the intentionally-vulnerable S3 bucket — the actual pentest lab.</p>
+    </div>
+  </div>
+
+  <div class="note">
+    These screenshots come from a real headless-browser run of the actual app code (<code>npm run dev</code>), with the Base44 backend and Terraform Cloud responses mocked at the network layer — so every state shown (plan counts, log text, deployed status, Kali IP) was produced by the real <code>pollRunStatus</code> / <code>base44.functions.invoke</code> logic in <code>Deployments.jsx</code>, not hand-written demo text.
+  </div>
+
+  <h2>1. Fill in the lab variables</h2>
+  <p>The New Deployment form (<code>VariablesForm.jsx</code>) maps directly onto <code>variables.tf</code> — region, VPC/subnet CIDRs, instance type, AMI IDs, AD domain/DSRM password.</p>
+  <figure class="shot">
+    <img src="04-form-filled.png" alt="Deployment form filled in" />
+    <figcaption>New Deployment tab with all required fields filled in, live cost estimate at the bottom.</figcaption>
+  </figure>
+
+  <h2>2. Test Plan — a real, speculative Terraform Cloud run</h2>
+  <ol class="steps">
+    <li>Click <strong>Test Plan</strong> → frontend calls <code>planOnly</code>, which creates (or reuses) a TFC workspace and uploads a <em>speculative</em> configuration version — it can never apply, so no AWS resources are touched.</li>
+    <li>Frontend polls <code>getRunStatus</code> every 3s until the run reaches a terminal state and streams the real plan log.</li>
+    <li><code>PlanSummary.jsx</code> parses the real <code>"Plan: N to add, M to change, K to destroy"</code> line and the <code>"# aws_xxx.yyy will be created"</code> entries — counts are computed, not hardcoded.</li>
+  </ol>
+  <figure class="shot">
+    <img src="06-plan-complete.png" alt="Plan summary with computed resource counts" />
+    <figcaption>Plan Summary showing 5/0/0 — computed from a mocked plan with 5 resources, proving the old hardcoded "18" is gone.</figcaption>
+  </figure>
+
+  <h2>3. Deploy Lab — real apply, streamed log</h2>
+  <ol class="steps">
+    <li><strong>Deploy Lab</strong> creates the <code>Deployment</code> entity, then calls <code>createWorkspace</code> (workspace + variables + config upload + run, <code>auto-apply: true</code>).</li>
+    <li>The same <code>pollRunStatus</code> loop streams real plan+apply log text into the terminal panel (<code>DeployLog.jsx</code>) as the run progresses through <code>planning → applying → applied</code>.</li>
+    <li>On <code>applied</code>, <code>getOutputs</code> reads the workspace's actual Terraform outputs (<code>kali_public_ip</code>, <code>vpc_id</code>, <code>vuln_bucket_name</code>) and writes them onto the deployment record.</li>
+  </ol>
+  <figure class="shot">
+    <img src="08-deployed-log.png" alt="Deploy log terminal streaming real apply output" />
+    <figcaption>Terminal panel streaming the (mocked) Terraform Cloud apply log in real time via the actual polling code.</figcaption>
+  </figure>
+
+  <h2>4. History — real status, real outputs</h2>
+  <p>The History tab reflects the <code>Deployment</code> entity as updated by the real run lifecycle — status badge, region/CIDR/instance type, and the Kali public IP pulled from <code>getOutputs</code>.</p>
+  <figure class="shot">
+    <img src="10-history-deployed.png" alt="History tab showing a deployed lab with real Kali IP" />
+    <figcaption>History tab: deployment shows "deployed" with the Kali IP returned by getOutputs — Destroy triggers destroyWorkspace the same way.</figcaption>
+  </figure>
+
+  <h2>What's still manual</h2>
+  <p>This preview mocks the Base44 functions and Terraform Cloud API so the UI flow could be demonstrated without a live TFC account. For a real deployment, see <a href="../secure-orbit-deploy/tfc-functions/README.md"><code>secure-orbit-deploy/tfc-functions/README.md</code></a> for the one-time setup: creating a Terraform Cloud org/token, deciding on AWS credentials, and pasting the five function files into the Base44 editor.</p>
+</main>
+</body>
+</html>

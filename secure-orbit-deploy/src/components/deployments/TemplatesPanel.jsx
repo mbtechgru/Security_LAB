@@ -5,8 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { BookTemplate, Plus, Trash2, Download, ChevronDown, ChevronUp, Save } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { BookTemplate, Trash2, Download, ChevronDown, ChevronUp, Save } from 'lucide-react';
 
 export default function TemplatesPanel({ currentForm, onLoad }) {
   const queryClient = useQueryClient();

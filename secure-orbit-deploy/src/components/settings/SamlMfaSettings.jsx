@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Save, Upload, Copy, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Save, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';

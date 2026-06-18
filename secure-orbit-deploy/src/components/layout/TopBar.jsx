@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, User, LogOut, ChevronDown, Shield } from 'lucide-react';
+import { Search, LogOut, ChevronDown, Shield } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/AuthContext';
 import AlertsDropdown from '@/components/layout/AlertsDropdown';

@@ -3,7 +3,6 @@ import { cn } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
 import { Shield, Rocket, Cloud, AlertTriangle, CheckCircle2, Activity, Filter, RefreshCw } from 'lucide-react';
 import moment from 'moment';
-import { Badge } from '@/components/ui/badge';
 
 const typeConfig = {
   deployment: { icon: Rocket,       color: 'text-primary',      bg: 'bg-primary/10',     label: 'Deploy'   },

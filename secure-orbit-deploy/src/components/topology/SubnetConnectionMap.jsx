@@ -1,5 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { cn } from '@/lib/utils';
+import React, { useState } from 'react';
 
 // Node positions are defined as % of the SVG viewBox (600 x 420)
 const NODES = [

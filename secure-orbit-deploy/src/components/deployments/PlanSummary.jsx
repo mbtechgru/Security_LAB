@@ -56,6 +56,11 @@ export default function PlanSummary({ planOutput }) {
     grouped[category].push({ type, count, icon: resourceIcons[type] || resourceIcons.default });
   });
 
+  const totalToAdd = Object.values(resourceTypes).reduce((sum, count) => sum + count, 0);
+  const changeMatch = planOutput.match(/Plan:\s*\d+\s*to add,\s*(\d+)\s*to change,\s*(\d+)\s*to destroy/);
+  const totalToChange = changeMatch ? Number(changeMatch[1]) : 0;
+  const totalToDestroy = changeMatch ? Number(changeMatch[2]) : 0;
+
   return (
     <Card className="border-border bg-card">
       <CardHeader className="pb-3">
@@ -73,7 +78,7 @@ export default function PlanSummary({ planOutput }) {
             </div>
             <div>
               <p className="text-sm font-semibold text-emerald-500">Plan Ready</p>
-              <p className="text-xs text-muted-foreground">18 resources to add, 0 to change, 0 to destroy</p>
+              <p className="text-xs text-muted-foreground">{totalToAdd} resources to add, {totalToChange} to change, {totalToDestroy} to destroy</p>
             </div>
           </div>
           <Badge variant="outline" className="border-emerald-500/30 text-emerald-500">
@@ -109,15 +114,15 @@ export default function PlanSummary({ planOutput }) {
         {/* Quick Stats */}
         <div className="grid grid-cols-3 gap-2 pt-3 border-t border-border">
           <div className="text-center">
-            <p className="text-lg font-bold text-foreground">18</p>
+            <p className="text-lg font-bold text-foreground">{totalToAdd}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Add</p>
           </div>
           <div className="text-center border-l border-border">
-            <p className="text-lg font-bold text-foreground">0</p>
+            <p className="text-lg font-bold text-foreground">{totalToChange}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Change</p>
           </div>
           <div className="text-center border-l border-border">
-            <p className="text-lg font-bold text-foreground">0</p>
+            <p className="text-lg font-bold text-foreground">{totalToDestroy}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Destroy</p>
           </div>
         </div>

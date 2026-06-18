@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import {
   Globe, Server, Shield, Database, MonitorSmartphone,
-  Network, Lock, Unlock, ArrowDown, ArrowRight, Wifi,
+  Network, Lock, ArrowDown, ArrowRight, Wifi,
   Cloud, HardDrive, Layers
 } from 'lucide-react';
 import SubnetConnectionMap from '@/components/topology/SubnetConnectionMap';

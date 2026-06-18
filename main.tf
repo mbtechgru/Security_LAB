@@ -19,7 +19,7 @@ resource "aws_vpc" "lab" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
   enable_dns_hostnames = true
-  tags = { Name = "PentestLab-VPC" }
+  tags                 = { Name = "PentestLab-VPC" }
 }
 
 resource "aws_internet_gateway" "igw" {
@@ -52,21 +52,21 @@ resource "aws_subnet" "attacker" {
   vpc_id                  = aws_vpc.lab.id
   cidr_block              = var.attacker_subnet_cidr
   map_public_ip_on_launch = true
-  tags = { Name = "PentestLab-Subnet-Attacker" }
+  tags                    = { Name = "PentestLab-Subnet-Attacker" }
 }
 
 resource "aws_subnet" "victim" {
   vpc_id                  = aws_vpc.lab.id
   cidr_block              = var.victim_subnet_cidr
   map_public_ip_on_launch = false
-  tags = { Name = "PentestLab-Subnet-Victim" }
+  tags                    = { Name = "PentestLab-Subnet-Victim" }
 }
 
 resource "aws_subnet" "services" {
   vpc_id                  = aws_vpc.lab.id
   cidr_block              = var.services_subnet_cidr
   map_public_ip_on_launch = false
-  tags = { Name = "PentestLab-Subnet-Services" }
+  tags                    = { Name = "PentestLab-Subnet-Services" }
 }
 
 resource "aws_route_table_association" "assoc_attacker" {
@@ -168,15 +168,15 @@ resource "aws_iam_role" "lab_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
+      Effect    = "Allow"
       Principal = { Service = "ec2.amazonaws.com" }
-      Action   = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
     }]
   })
 }
 
 resource "aws_iam_policy" "over_permissive" {
-  name   = "PentestLab-AdminLike-Policy"
+  name = "PentestLab-AdminLike-Policy"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -217,11 +217,11 @@ resource "aws_s3_bucket_policy" "vuln" {
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Sid      = "PublicReadWrite",
-      Effect   = "Allow",
-      Principal= "*",
-      Action   = ["s3:GetObject","s3:PutObject"],
-      Resource = "${aws_s3_bucket.vuln.arn}/*"
+      Sid       = "PublicReadWrite",
+      Effect    = "Allow",
+      Principal = "*",
+      Action    = ["s3:GetObject", "s3:PutObject"],
+      Resource  = "${aws_s3_bucket.vuln.arn}/*"
     }]
   })
   depends_on = [aws_s3_bucket_public_access_block.vuln]
@@ -235,12 +235,12 @@ data "aws_ssm_parameter" "al2023_ami" {
 
 # --------- EC2 Instances ---------
 resource "aws_instance" "kali" {
-  ami                    = var.kali_ami_id
-  instance_type          = var.instance_type_free_tier
-  key_name               = var.key_pair_name
-  iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
-  subnet_id              = aws_subnet.attacker.id
-  vpc_security_group_ids = [aws_security_group.attacker.id]
+  ami                         = var.kali_ami_id
+  instance_type               = var.instance_type_free_tier
+  key_name                    = var.key_pair_name
+  iam_instance_profile        = aws_iam_instance_profile.lab_profile.name
+  subnet_id                   = aws_subnet.attacker.id
+  vpc_security_group_ids      = [aws_security_group.attacker.id]
   associate_public_ip_address = true
 
   user_data = <<-EOF
@@ -260,21 +260,21 @@ resource "aws_instance" "kali" {
 }
 
 resource "aws_instance" "metasploitable" {
-  ami                    = var.metasploitable_ami_id
-  instance_type          = var.instance_type_free_tier
-  key_name               = var.key_pair_name
-  subnet_id              = aws_subnet.victim.id
-  vpc_security_group_ids = [aws_security_group.victim.id]
+  ami                         = var.metasploitable_ami_id
+  instance_type               = var.instance_type_free_tier
+  key_name                    = var.key_pair_name
+  subnet_id                   = aws_subnet.victim.id
+  vpc_security_group_ids      = [aws_security_group.victim.id]
   associate_public_ip_address = false
-  tags = { Name = "PentestLab-Metasploitable" }
+  tags                        = { Name = "PentestLab-Metasploitable" }
 }
 
 resource "aws_instance" "windows_dc" {
-  ami                    = var.windows_ami_id
-  instance_type          = var.instance_type_free_tier
-  key_name               = var.key_pair_name
-  subnet_id              = aws_subnet.victim.id
-  vpc_security_group_ids = [aws_security_group.victim.id]
+  ami                         = var.windows_ami_id
+  instance_type               = var.instance_type_free_tier
+  key_name                    = var.key_pair_name
+  subnet_id                   = aws_subnet.victim.id
+  vpc_security_group_ids      = [aws_security_group.victim.id]
   associate_public_ip_address = false
 
   user_data = <<-EOF
@@ -289,12 +289,12 @@ resource "aws_instance" "windows_dc" {
 }
 
 resource "aws_instance" "juice_shop" {
-  ami                    = data.aws_ssm_parameter.al2023_ami.value
-  instance_type          = var.instance_type_free_tier
-  key_name               = var.key_pair_name
-  subnet_id              = aws_subnet.services.id
-  vpc_security_group_ids = [aws_security_group.services.id]
-  iam_instance_profile   = aws_iam_instance_profile.lab_profile.name
+  ami                         = data.aws_ssm_parameter.al2023_ami.value
+  instance_type               = var.instance_type_free_tier
+  key_name                    = var.key_pair_name
+  subnet_id                   = aws_subnet.services.id
+  vpc_security_group_ids      = [aws_security_group.services.id]
+  iam_instance_profile        = aws_iam_instance_profile.lab_profile.name
   associate_public_ip_address = false
 
   user_data = <<-EOF

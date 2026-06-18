@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Security LAB — Product Preview</title>
+<style>
+  :root {
+    --bg: #060912;
+    --card: #0e1422;
+    --border: #1c2738;
+    --text: #eef2f8;
+    --muted: #92a0b8;
+    --accent: #3b82f6;
+    --accent2: #8b5cf6;
+    --green: #22c55e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: radial-gradient(circle at 20% 0%, #0c1830 0%, var(--bg) 45%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  header.hero {
+    padding: 96px 24px 64px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-mark {
+    width: 56px; height: 56px;
+    margin: 0 auto 24px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 22px; color: white;
+  }
+  .eyebrow {
+    display: inline-block;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(59,130,246,0.12);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: 999px;
+    padding: 5px 14px;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-size: 40px;
+    margin: 0 0 16px;
+    letter-spacing: -0.02em;
+  }
+  header.hero p.lead {
+    max-width: 620px;
+    margin: 0 auto;
+    color: var(--muted);
+    font-size: 16.5px;
+    line-height: 1.6;
+  }
+
+  .pill-row {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 32px;
+  }
+  .pill {
+    font-size: 12.5px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 999px;
+    padding: 7px 14px;
+  }
+
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 72px 24px 100px;
+  }
+
+  .screen {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+    padding: 56px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .screen:last-child { border-bottom: none; }
+  .screen.reverse { direction: rtl; }
+  .screen.reverse > * { direction: ltr; }
+
+  .screen-copy .step {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .screen-copy h2 {
+    font-size: 26px;
+    margin: 0 0 14px;
+  }
+  .screen-copy p {
+    color: var(--muted);
+    line-height: 1.65;
+    font-size: 15px;
+    margin: 0 0 18px;
+  }
+  .screen-copy ul {
+    margin: 0;
+    padding-left: 18px;
+    color: #c7d2e3;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .screen-shot {
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6);
+  }
+  .screen-shot img {
+    display: block;
+    width: 100%;
+  }
+
+  footer {
+    text-align: center;
+    padding: 48px 24px 80px;
+    color: var(--muted);
+    font-size: 13.5px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 860px) {
+    .screen, .screen.reverse { grid-template-columns: 1fr; direction: ltr; }
+    h1 { font-size: 30px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="logo-mark">S</div>
+  <span class="eyebrow">Product Preview</span>
+  <h1>Security LAB</h1>
+  <p class="lead">A single dashboard to spin up, monitor, and tear down isolated pentesting lab environments on AWS — from one-click deployment to live cost tracking and audit-ready reporting.</p>
+  <div class="pill-row">
+    <span class="pill">One-click lab deployment</span>
+    <span class="pill">Live network topology</span>
+    <span class="pill">Security &amp; compliance reports</span>
+    <span class="pill">Real-time cost estimates</span>
+    <span class="pill">Full audit trail</span>
+  </div>
+</header>
+
+<main>
+
+  <div class="screen">
+    <div class="screen-copy">
+      <div class="step">Overview</div>
+      <h2>One dashboard, full visibility</h2>
+      <p>See every active environment, its health, and recent activity the moment you log in — no digging through cloud consoles or spreadsheets.</p>
+      <ul>
+        <li>Deployment status and resource distribution at a glance</li>
+        <li>Region &amp; availability zone map</li>
+        <li>Live network topology preview</li>
+        <li>Recent events feed</li>
+      </ul>
+    </div>
+    <div class="screen-shot"><img src="preview-assets/dashboard.png" alt="Dashboard overview" /></div>
+  </div>
+
+  <div class="screen reverse">
+    <div class="screen-copy">
+      <div class="step">Deployments</div>
+      <h2>Spin up a lab in minutes</h2>
+      <p>Configure a new environment with a guided form, preview exactly what will be built, then deploy or tear it down with one click.</p>
+      <ul>
+        <li>Reusable templates for common lab configurations</li>
+        <li>Full deployment history with live status</li>
+        <li>One-click destroy when an engagement wraps up</li>
+      </ul>
+    </div>
+    <div class="screen-shot"><img src="preview-assets/deployments-history.png" alt="Deployments history" /></div>
+  </div>
+
+  <div class="screen">
+    <div class="screen-copy">
+      <div class="step">Network Topology</div>
+      <h2>See the lab as your team will attack it</h2>
+      <p>A live, visual map of every subnet, security group, and host — attacker, victim, and services tiers laid out exactly as they're connected.</p>
+      <ul>
+        <li>Public vs. private subnet boundaries at a glance</li>
+        <li>Per-instance status and connectivity</li>
+        <li>Security exposure summary alongside the diagram</li>
+      </ul>
+    </div>
+    <div class="screen-shot"><img src="preview-assets/topology.png" alt="Network topology" /></div>
+  </div>
+
+  <div class="screen reverse">
+    <div class="screen-copy">
+      <div class="step">Reports</div>
+      <h2>Hand clients a report, not a screen share</h2>
+      <p>Generate security audit, compliance, and resource inventory reports from any deployment, with findings broken down by severity and ready to export.</p>
+      <ul>
+        <li>Findings summarized by critical / high / medium / low</li>
+        <li>One-click PDF export</li>
+        <li>Tied to the exact deployment it was generated from</li>
+      </ul>
+    </div>
+    <div class="screen-shot"><img src="preview-assets/reports.png" alt="Reports" /></div>
+  </div>
+
+  <div class="screen">
+    <div class="screen-copy">
+      <div class="step">Cost Estimator</div>
+      <h2>Know the bill before you deploy</h2>
+      <p>Predict monthly AWS spend for any lab configuration, with a per-instance breakdown and a spending trend you can hand straight to finance.</p>
+      <ul>
+        <li>Live estimate as you change instance type or schedule</li>
+        <li>Cost breakdown by resource</li>
+        <li>Estimates tracked against currently active deployments</li>
+      </ul>
+    </div>
+    <div class="screen-shot"><img src="preview-assets/cost-estimator.png" alt="Cost estimator" /></div>
+  </div>
+
+  <div class="screen reverse">
+    <div class="screen-copy">
+      <div class="step">Event Log &amp; Settings</div>
+      <h2>A full audit trail, and the controls to match</h2>
+      <p>Every deploy, destroy, and security-relevant change is logged and filterable. Authentication, directory integration, and alerting are configured from one settings panel.</p>
+      <ul>
+        <li>Filter events by type and severity</li>
+        <li>SAML/MFA, AD/Entra ID, and SMTP alerting built in</li>
+        <li>Local user management for smaller teams</li>
+      </ul>
+    </div>
+    <div class="screen-shot"><img src="preview-assets/event-log.png" alt="Event log" /></div>
+  </div>
+
+</main>
+
+<footer>
+  Security LAB — Terraform-powered pentesting environments. Built on AWS.
+</footer>
+
+</body>
+</html>
