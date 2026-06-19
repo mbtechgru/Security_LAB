@@ -257,7 +257,7 @@ resource "aws_instance" "kali" {
   EOF
 
 timeouts {
-  create = "20m"
+  create = "30m"
 }
 
   tags = { Name = "PentestLab-Kali" }
