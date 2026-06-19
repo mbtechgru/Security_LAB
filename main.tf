@@ -256,6 +256,10 @@ resource "aws_instance" "kali" {
     echo "Vuln bucket: ${aws_s3_bucket.vuln.bucket}" > /root/lab-info.txt
   EOF
 
+timeouts {
+  create = "20m"
+}
+
   tags = { Name = "PentestLab-Kali" }
 }
 
@@ -266,6 +270,11 @@ resource "aws_instance" "metasploitable" {
   subnet_id                   = aws_subnet.victim.id
   vpc_security_group_ids      = [aws_security_group.victim.id]
   associate_public_ip_address = false
+
+timeouts {
+  create = "20m"
+}
+
   tags                        = { Name = "PentestLab-Metasploitable" }
 }
 
