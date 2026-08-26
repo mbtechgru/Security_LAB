@@ -71,3 +71,9 @@ variable "windows_ami_id" {
   description = "AMI ID for Windows Server 2019/2022 Base in your region"
   type        = string
 }
+
+variable "victim_instance_count" {
+  description = "Number of Metasploitable victim instances to provision in the victim subnet (1-10)"
+  type        = number
+  default     = 1
+}
