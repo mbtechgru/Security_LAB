@@ -264,6 +264,7 @@ timeouts {
 }
 
 resource "aws_instance" "metasploitable" {
+  count                       = var.victim_instance_count
   ami                         = var.metasploitable_ami_id
   instance_type               = var.instance_type_free_tier
   key_name                    = var.key_pair_name
@@ -275,7 +276,7 @@ timeouts {
   create = "20m"
 }
 
-  tags                        = { Name = "PentestLab-Metasploitable" }
+  tags                        = { Name = "PentestLab-Metasploitable-${count.index + 1}" }
 }
 
 resource "aws_instance" "windows_dc" {
