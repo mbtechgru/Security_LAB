@@ -3,7 +3,7 @@
 This Terraform project deploys an isolated pentesting lab that mirrors the CloudFormation version:
 - VPC with attacker (public), victim (private), and services (private) subnets
 - Kali (t2.micro) with public IP
-- Metasploitable 2 (t2.micro) private
+- Metasploitable 2 (t2.micro) private — scale to N hosts with `victim_instance_count` (default 1)
 - Windows Server (t2.micro) auto-promoted to AD DS (domain default `lab.local`)
 - OWASP Juice Shop on AL2023 (Docker) in services subnet (port 3000) reachable from Kali only
 - Public read/write S3 bucket (FOR LAB ONLY)
@@ -17,6 +17,16 @@ This Terraform project deploys an isolated pentesting lab that mirrors the Cloud
 5. Destroy with `terraform destroy` when done.
 
 > ⚠️ **Safety**: Use in your own AWS account only. The environment is intentionally insecure.
+
+## Scaling victim hosts
+
+By default a single Metasploitable 2 instance is provisioned in the victim subnet. Set `victim_instance_count` in `terraform.tfvars` (1–10) to provision multiple victim hosts — each is tagged `PentestLab-Metasploitable-<n>`:
+
+```hcl
+victim_instance_count = 3
+```
+
+The same variable is exposed in the secure-orbit-deploy Deployments form ("Victim Instance Count") and pushed to the Terraform Cloud workspace as a Terraform variable on every run.
 
 ## Web Dashboard (secure-orbit-deploy)
 
